@@ -65,6 +65,12 @@ def build_blocks():
                  (site.site_name if site else "Sin configurar") +
                  (" · " + (site.copyright_text or "")[:38] if site else ""),
                  singleton=True),
+        (lambda cta: {"icon": "🖼", "title": "Banner CTA (textos, imagen, activar)",
+                      "desc": "Eyebrow, título, descripción, botón, imagen de fondo y mostrar/ocultar",
+                      "summary": ((cta.title[:46] + "…") if cta and len(cta.title) > 46
+                                  else (cta.title if cta else "Sin configurar")),
+                      "url": _change_url(SectionBlock, cta.pk) if cta else _list_url(SectionBlock),
+                      "count": 1, "is_list": False})(SectionBlock.objects.filter(key='cta').first()),
         add_card("☗", "Header / botonera sticky",
                  "Logo del menú, logo al hacer scroll y botón de acción principal",
                  StickyNav,
@@ -134,9 +140,10 @@ def build_blocks():
 
 
 def build_sections():
-    """Las 12 secciones del home, una por fila, con enlace directo a su edición."""
+    """Las secciones canonicas del home (sin los clones de bloques duplicados)."""
     out = []
-    for s in SectionBlock.objects.all():
+    clonadas = set(SectionBlock.objects.exclude(block=None).values_list("pk", flat=True))
+    for s in SectionBlock.objects.exclude(pk__in=clonadas):
         out.append({
             "key": s.get_key_display(),
             "eyebrow": s.eyebrow,

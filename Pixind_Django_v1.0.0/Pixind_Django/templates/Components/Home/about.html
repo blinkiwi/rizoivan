@@ -2,10 +2,17 @@
 <div class="container relative">
     <div class="grid md:grid-cols-12 grid-cols-1 items-center gap-6">
         <div class="lg:col-span-6 md:col-span-6 md:order-1 order-2">
-            <h6 class="text-primary uppercase text-sm font-bold tracking-wider mb-3 wow animate__animated animate__fadeInUp" data-wow-delay=".2s">{{ sections.about.eyebrow }}</h6>
+            {% if sections.about.show_eyebrow %}
+            <h6 class="text-primary uppercase text-sm font-bold tracking-wider mb-3 wow animate__animated animate__fadeInUp" data-wow-delay=".2s"{% if sections.about.eyebrow_style %} style="{{ sections.about.eyebrow_style }}"{% endif %}>{{ sections.about.eyebrow }}</h6>
+            {% endif %}
+            {% if sections.about.show_title %}
             <h4 class="mb-4 text-[32px] md:leading-normal leading-normal font-bold wow animate__animated animate__fadeInUp" data-wow-delay=".4s"{% if sections.about.title_style %} style="{{ sections.about.title_style }}"{% endif %}>{{ sections.about.title_html|safe }}</h4>
+            {% endif %}
+            {% if sections.about.show_description %}
             <p class="text-slate-400 max-w-xl wow animate__animated animate__fadeInUp" data-wow-delay=".6s">{{ sections.about.description }}</p>
+            {% endif %}
 
+            {% if sections.about.show_checklist %}
             <div class="grid lg:grid-cols-2 grid-cols-1 mt-6 lg:gap-6 wow animate__animated animate__fadeInUp" data-wow-delay=".8s">
                 <ul class="list-none text-slate-400">
                     {% for item in sections.about.checklist|slice:":2" %}
@@ -19,19 +26,26 @@
                     {% endfor %}
                 </ul>
             </div>
+            {% endif %}
 
+            {% if sections.about.show_avatar or sections.about.show_avatar_dup %}
             <div class="mt-6 wow animate__animated animate__fadeInUp" data-wow-delay="1s">
                 {% static 'app/images/client/01.jpg' as avatar_default %}
+                {% if sections.about.show_avatar %}
                 <div class="flex items-center">
                     <img src="{% firstof sections.about.extra_image avatar_default %}" class="rounded-full size-10 shadow-sm shadow-gray-200 dark:shadow-gray-800 me-2" alt="{{ sections.about.person_text }}">
                     <span class="bg-white dark:bg-slate-900 shadow-sm shadow-gray-200 dark:shadow-gray-800 font-semibold uppercase tracking-wider text-xs px-3 py-1.5 rounded-md">{{ sections.about.badge_text }}</span>
                 </div>
+                {% endif %}
 
+                {% if sections.about.show_avatar_dup %}
                 <div class="about-dup flex items-center">
                     <img src="{% firstof sections.about.extra_image_dup sections.about.extra_image avatar_default %}" class="rounded-full size-10 shadow-sm shadow-gray-200 dark:shadow-gray-800 me-2" alt="{{ sections.about.person_text }}">
                     <span class="bg-white dark:bg-slate-900 shadow-sm shadow-gray-200 dark:shadow-gray-800 font-semibold uppercase tracking-wider text-xs px-3 py-1.5 rounded-md">{{ sections.about.badge_text_dup|default:sections.about.badge_text }}</span>
                 </div>
+                {% endif %}
             </div>
+            {% endif %}
 
             {% if sections.about.show_learn_more %}
             <div class="mt-6 wow animate__animated animate__fadeInUp" data-wow-delay="1.2s">
@@ -43,7 +57,9 @@
         <div class="lg:col-span-6 md:col-span-6 md:ms-8 md:order-2 order-1">
             <div class="relative">
                 <div class="relative">
+                    {% if sections.about.show_main_image %}
                     <img src="{% if sections.about.image %}{{ sections.about.image }}{% else %}{% static 'app/images/about.jpg' %}{% endif %}" class="mx-auto rounded-lg shadow-sm shadow-gray-200 dark:shadow-gray-800 wow animate__animated animate__fadeInUp" data-wow-delay=".5s" alt="{{ sections.about.title }}">
+                    {% endif %}
 
                     {% if sections.about.show_play %}
                     <div class="absolute top-4 -inset-e-2 text-center">

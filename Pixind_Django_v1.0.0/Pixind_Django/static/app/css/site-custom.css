@@ -49,3 +49,28 @@ footer a > img {
    separación vertical exacta; cada imagen lleva su propia insignia al lado
    (el texto se pinta dos veces desde el mismo campo del panel). */
 .about-dup { margin-top: 25px; }
+
+/* ==========================================================================
+   Botón flotante de WhatsApp (panel → Sitio → "Botón flotante de WhatsApp").
+   Queda JUSTO ENCIMA del back-to-top (bottom-5 right-5, 36px) para no pisarlo.
+   ========================================================================== */
+.rz-whatsapp {
+    position: fixed;
+    right: 20px;
+    bottom: 68px;
+    z-index: 55;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: #25d366;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, .35);
+    transition: transform .2s ease;
+}
+.rz-whatsapp:hover { transform: scale(1.08); }
+.rz-whatsapp svg { width: 30px; height: 30px; }
+@media (max-width: 640px) {
+    .rz-whatsapp { width: 52px; height: 52px; right: 16px; bottom: 64px; }
+}

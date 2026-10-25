@@ -34,6 +34,12 @@ class SiteConfig(models.Model):
                                    verbose_name='Paleta: color al pasar el mouse (#hex, vacio = original)')
     color_bg = models.CharField(max_length=9, default='', blank=True,
                                 verbose_name='Paleta: color de fondo (#hex, vacio = original)')
+    whatsapp_enabled = models.BooleanField(default=True,
+                                           verbose_name='Mostrar boton flotante de WhatsApp')
+    whatsapp_phone = models.CharField(max_length=30, default='', blank=True,
+                                      verbose_name='WhatsApp: telefono (codigo de pais, sin +)')
+    whatsapp_message = models.CharField(max_length=255, default='', blank=True,
+                                        verbose_name='WhatsApp: mensaje de inicio')
     logo = models.ImageField(upload_to='site_logos/', blank=True, null=True, verbose_name='Logo')
     favicon = models.ImageField(upload_to='site_favicons/', blank=True, null=True, verbose_name='Favicon')
     created_at = models.DateTimeField(auto_now_add=True)
@@ -74,6 +80,7 @@ class NavItem(models.Model):
     label = models.CharField(max_length=100, default='', verbose_name='Texto')
     url = models.CharField(max_length=255, default='#home', verbose_name='Enlace (#ancla o /ruta)')
     order = models.IntegerField(default=0, verbose_name='Orden')
+    visible = models.BooleanField(default=True, verbose_name='Visible en el menu')
 
     class Meta:
         ordering = ['order']
@@ -132,8 +139,15 @@ class SectionBlock(models.Model):
         ('contactus', 'Contact us'),
         ('map', 'Mapa (iframe)'),
     ]
-    key = models.CharField(max_length=30, choices=KEY_CHOICES, unique=True, verbose_name='Seccion')
+    key = models.CharField(max_length=30, choices=KEY_CHOICES, verbose_name='Seccion')
+    block = models.OneToOneField('HomeBlock', null=True, blank=True, on_delete=models.CASCADE,
+                                 related_name='content',
+                                 verbose_name='Bloque del home (solo si es copia)')
     eyebrow = models.CharField(max_length=255, default='', blank=True, verbose_name='Texto pequeno superior')
+    eyebrow_size = models.CharField(max_length=12, default='', blank=True,
+                                    verbose_name='Tamano del texto pequeno (ej. 18px; vacio = original)')
+    eyebrow_color = models.CharField(max_length=9, default='', blank=True,
+                                     verbose_name='Color del texto pequeno (#hex; vacio = original)')
     title = models.CharField(max_length=255, default='', blank=True, verbose_name='Titulo')
     description = models.TextField(default='', blank=True, verbose_name='Descripcion')
     TITLE_FONTS = [('', 'Por defecto de la plantilla'), ('waterfall', 'Waterfall (Google Fonts)')]
@@ -172,7 +186,21 @@ class SectionBlock(models.Model):
     show_learn_more = models.BooleanField(default=True,
                                           verbose_name='Mostrar boton Learn More (About)')
     show_play = models.BooleanField(default=True,
-                                    verbose_name='Mostrar boton play del video (About)')
+                                     verbose_name='Mostrar boton play del video (About)')
+    show_eyebrow = models.BooleanField(default=True,
+                                        verbose_name='Mostrar texto pequeno superior (About)')
+    show_title = models.BooleanField(default=True,
+                                      verbose_name='Mostrar titulo (About)')
+    show_description = models.BooleanField(default=True,
+                                            verbose_name='Mostrar descripcion (About)')
+    show_checklist = models.BooleanField(default=True,
+                                          verbose_name='Mostrar lista / checklist (About)')
+    show_avatar = models.BooleanField(default=True,
+                                       verbose_name='Mostrar fila 1: avatar + insignia (About)')
+    show_avatar_dup = models.BooleanField(default=True,
+                                           verbose_name='Mostrar fila 2: avatar + insignia (duplicada)')
+    show_main_image = models.BooleanField(default=True,
+                                           verbose_name='Mostrar imagen principal (About)')
     form_name_label = models.CharField(max_length=100, default='Name :', blank=True,
                                        verbose_name='Form placeholder Nombre (Contacto)')
     form_email_label = models.CharField(max_length=100, default='Email :', blank=True,
@@ -322,6 +350,7 @@ class FooterColumn(models.Model):
     key = models.CharField(max_length=20, choices=KEY_CHOICES, unique=True, verbose_name='Columna')
     heading = models.CharField(max_length=100, default='', verbose_name='Titulo de la columna')
     order = models.IntegerField(default=0, verbose_name='Orden')
+    visible = models.BooleanField(default=True, verbose_name='Visible en el footer')
 
     class Meta:
         ordering = ['order']
@@ -353,6 +382,7 @@ class SocialLink(models.Model):
     icon = models.CharField(max_length=100, default='ri-facebook-circle-line', verbose_name='Icono (classe remix)')
     url = models.CharField(max_length=255, default='#', verbose_name='Enlace')
     order = models.IntegerField(default=0, verbose_name='Orden')
+    visible = models.BooleanField(default=True, verbose_name='Visible en el footer')
 
     class Meta:
         ordering = ['order']
@@ -455,7 +485,7 @@ class Portfolio(models.Model):
 
 class HomeBlock(models.Model):
     """Orden de los bloques del home (arrastrar y soltar en el panel)."""
-    key = models.CharField(max_length=30, unique=True, verbose_name='Clave interna')
+    key = models.CharField(max_length=30, verbose_name='Clave interna')
     label = models.CharField(max_length=100, verbose_name='Nombre del bloque')
     order = models.PositiveIntegerField(default=0, verbose_name='Posicion')
     visible = models.BooleanField(default=True, verbose_name='Visible en la web')

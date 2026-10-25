@@ -60,6 +60,7 @@ def _section_dict(key, obj):
     if obj:
         for field in ('eyebrow', 'title', 'description', 'button_label', 'button_url',
                       'title_font', 'title_size', 'title_color',
+                      'eyebrow_size', 'eyebrow_color',
                       'badge_text', 'badge_text_dup', 'person_text', 'checklist', 'embed_url',
                       'stat_label', 'stat_number', 'stat_percent',
                       'form_name_label', 'form_email_label', 'form_subject_label',
@@ -69,7 +70,9 @@ def _section_dict(key, obj):
                 data[field] = value
         if getattr(obj, 'stat_target', None):
             data['stat_target'] = obj.stat_target
-        for field in ('show_stat', 'show_learn_more', 'show_play'):
+        for field in ('show_eyebrow', 'show_title', 'show_description', 'show_checklist',
+                      'show_avatar', 'show_avatar_dup', 'show_main_image',
+                      'show_stat', 'show_learn_more', 'show_play'):
             if hasattr(obj, field):
                 data[field] = bool(getattr(obj, field))
         if obj.image:
@@ -97,6 +100,17 @@ def _section_dict(key, obj):
     if col:
         estilo.append('color:' + col)
     data['title_style'] = ';'.join(estilo)
+    # estilo del texto pequeno superior (tamano/color) -> atributo style del eyebrow
+    estilo_e = []
+    tame = str(data.get('eyebrow_size') or '').strip()
+    if re.fullmatch(r'\d+(\.\d{1,2})?(px|rem|em|%|vw|pt)?', tame):
+        if tame[-1].isdigit():
+            tame += 'px'
+        estilo_e.append('font-size:' + tame)
+    cole = _hx(data.get('eyebrow_color'))
+    if cole:
+        estilo_e.append('color:' + cole)
+    data['eyebrow_style'] = ';'.join(estilo_e)
     return data
 
 
@@ -170,9 +184,10 @@ def global_context(request):
 
     # --- header sticky -----------------------------------------------------
     nav_items = [
-        {'label': i.label, 'url': i.url}
+        {'label': i.label, 'url': i.url, 'visible': i.visible}
         for i in _rows(NavItem)
     ] or list(D.NAV_ITEMS)
+    nav_items = [n for n in nav_items if n.get('visible', True)]
     nav_logo = _image(nav.logo.name if nav and nav.logo else '',
                       media_url(logo.name) if logo else static('app/images/logo-dark.png'))
     sticky = {
@@ -183,21 +198,36 @@ def global_context(request):
     }
 
     # --- secciones ---------------------------------------------------------
-    section_objs = {s.key: s for s in _rows(SectionBlock)}
+    # Las clonadas por "duplicar bloque" NO son las canónicas: el diccionario
+    # global solo lleva las filas que ningún bloque reclama como propias.
+    _clonadas = set(SectionBlock.objects.exclude(block=None).values_list("pk", flat=True))
+    section_objs = {s.key: s for s in _rows(SectionBlock) if s.pk not in _clonadas}
     sections = {key: _section_dict(key, section_objs.get(key)) for key in D.SECTIONS}
-    load_waterfall = any(v.get('title_font') == 'waterfall' for v in sections.values())
 
-    # --- bloques del home en su orden (reordenable con drag & drop) --------
+    # --- bloques del home: por FILA (duplicados + visibilidad independiente)
+    # Cada bloque lleva su propio dict `sections` con SU sección reemplazada
+    # cuando tiene contenido propio (bloques duplicados se editan aparte).
     _labels = dict(D.HOME_BLOCKS)
-    _hb = _rows(HomeBlock)
-    _orden = [b.key for b in _hb if b.key in _labels]
-    _orden += [k for k in _labels if k not in _orden]
-    _visibles = {b.key: b.visible for b in _hb}
-    _elegidos = [k for k in _orden if _visibles.get(k, True)]
-    if not _elegidos:          # red de seguridad: si esta todo oculto, se muestra todo
-        _elegidos = _orden
-    home_blocks = [{'key': k, 'label': _labels[k], 'tpl': D.BLOCK_TPL[k]}
-                   for k in _elegidos if k in D.BLOCK_TPL]
+    _filas = list(HomeBlock.objects.select_related("content").filter(key__in=list(_labels)))
+    _con_fila = {b.key for b in _filas}                  # claves que EXISTEN (ocultas o no)
+    _usar = [b for b in _filas if b.visible] or _filas   # red de seguridad: todo oculto => todo
+    home_blocks = []
+    for b in _usar:
+        own = getattr(b, 'content', None)   # contenido propio: solo en duplicados
+        sdict = sections
+        if own:
+            sdict = dict(sections)
+            sdict[D.BLOCK_SECTION.get(b.key, b.key)] = _section_dict(own.key, own)
+        home_blocks.append({'key': b.key, 'label': _labels[b.key],
+                            'tpl': D.BLOCK_TPL[b.key], 'sections': sdict})
+    for k in _labels:        # SOLO claves sin fila (BD a medio sembrar); un bloque
+        if k not in _con_fila:   # OCULTO no se re-añade: su casilla Visible lo controla
+            home_blocks.append({'key': k, 'label': _labels[k],
+                                'tpl': D.BLOCK_TPL[k], 'sections': sections})
+
+    load_waterfall = any(v.get('title_font') == 'waterfall'
+                         for blk in home_blocks for v in blk['sections'].values()) or \
+                     any(v.get('title_font') == 'waterfall' for v in sections.values())
 
     # --- listas ------------------------------------------------------------
     feature_objs = _rows(FeatureBlock)
@@ -279,19 +309,22 @@ def global_context(request):
     footer_obj = FooterBlock.objects.filter(order=0).first()
     footer_description = (footer_obj.description if footer_obj else '') or D.FOOTER['description']
 
-    socials = [{'icon': s.icon, 'url': s.url} for s in _rows(SocialLink)] or list(D.SOCIALS)
+    socials = [{'icon': s.icon, 'url': s.url, 'visible': s.visible}
+               for s in _rows(SocialLink)] or list(D.SOCIALS)
+    socials = [s for s in socials if s.get('visible', True)]
 
     columns = []
     col_objs = list(FooterColumn.objects.all())
     if col_objs:
         for col in col_objs:
             columns.append({
-                'key': col.key, 'heading': col.heading,
+                'key': col.key, 'heading': col.heading, 'visible': col.visible,
                 'links': [{'label': l.label, 'url': l.url}
                           for l in col.links.all().order_by('order')],
             })
     else:
         columns = [dict(c, links=list(c['links'])) for c in D.FOOTER_COLUMNS]
+    columns = [c for c in columns if c.get('visible', True)]
 
     footer_columns = [c for c in columns if c['key'] != 'bottom']
     footer_bottom_links = next((c['links'] for c in columns if c['key'] == 'bottom'), [])
@@ -320,6 +353,12 @@ def global_context(request):
             'text': site.color_text if site else '',
             'bg': site.color_bg if site else '',
         }),
+        # boton flotante de WhatsApp
+        'whatsapp': {
+            'enabled': bool(site and site.whatsapp_enabled and site.whatsapp_phone.strip()),
+            'phone': re.sub(r'\D', '', site.whatsapp_phone) if site else '',
+            'message': (site.whatsapp_message or '').strip() if site else '',
+        },
         # sitio / head
         'site_name': site_name,
         'meta_title': meta_title,

@@ -1,0 +1,64 @@
+{% extends "admin/change_list.html" %}
+{% load i18n admin_urls static %}
+
+{% block extrabody %}
+{{ block.super }}
+<style>
+  #result_list .rz-visible { width: 18px; height: 18px; accent-color: #4ec163; cursor: pointer; }
+</style>
+<script>
+(function () {
+  const table = document.querySelector('#result_list');
+  if (!table || !table.tBodies[0]) return;
+  const tbody = table.tBodies[0];
+
+  let toast;
+  function aviso(ok) {
+    if (!toast) {
+      toast = document.createElement('div');
+      toast.style.cssText = 'position:fixed;top:14px;right:14px;z-index:9999;padding:10px 16px;' +
+        'border-radius:10px;font-weight:600;box-shadow:0 6px 20px rgba(0,0,0,.25);transition:opacity .4s;opacity:0';
+      document.body.appendChild(toast);
+    }
+    toast.textContent = ok ? '✓ Guardado' : '⚠ No se pudo guardar';
+    toast.style.background = ok ? '#4ec163' : '#e35d6a';
+    toast.style.color = '#fff';
+    toast.style.opacity = '1';
+    clearTimeout(toast._t);
+    toast._t = setTimeout(function () { toast.style.opacity = '0'; }, 2200);
+  }
+
+  function pintarFila(cb, visible) {
+    const tr = cb.closest('tr');
+    if (tr) tr.style.opacity = visible ? '' : '.45';
+  }
+
+  document.querySelectorAll('#result_list .rz-visible').forEach(function (cb) {
+    if (!cb.checked) pintarFila(cb, false);
+    cb.addEventListener('change', async function () {
+      const antes = cb.checked;
+      try {
+        const csrf = (document.cookie.match(/(?:^|;\s*)csrftoken=([^;]+)/) || [])[1] || '';
+        const r = await fetch("{% url 'admin:navitem-toggle' %}", {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
+          body: JSON.stringify({ id: parseInt(cb.getAttribute('data-id'), 10) })
+        });
+        const data = await r.json().catch(function () { return {}; });
+        if (r.ok && data.ok) {
+          cb.checked = !!data.visible;
+          pintarFila(cb, !!data.visible);
+          aviso(true);
+        } else {
+          cb.checked = antes;
+          aviso(false);
+        }
+      } catch (e) {
+        cb.checked = antes;
+        aviso(false);
+      }
+    });
+  });
+})();
+</script>
+{% endblock %}

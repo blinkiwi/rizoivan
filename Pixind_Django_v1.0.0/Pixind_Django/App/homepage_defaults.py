@@ -77,6 +77,13 @@ SECTIONS = {
         'show_stat': True,
         'show_learn_more': True,
         'show_play': True,
+        'show_eyebrow': True,
+        'show_title': True,
+        'show_description': True,
+        'show_checklist': True,
+        'show_avatar': True,
+        'show_avatar_dup': True,
+        'show_main_image': True,
     },
     'features': {
         'eyebrow': 'Features',
@@ -272,3 +279,20 @@ HOME_BLOCKS = [
     ('map', 'Mapa'),
 ]
 BLOCK_TPL = {key: f'pages/blocks/{key}.html' for key, _ in HOME_BLOCKS}
+
+# Cada bloque del home pinta UNA sección (claves internas distintas en 4 casos)
+BLOCK_SECTION = {
+    'hero': None,            # el hero usa HeaderBlock, no SectionBlock
+    'about': 'about',
+    'features': 'features',
+    'why': 'choose_us',
+    'portfolio': 'portfolio',
+    'partners': 'partners',
+    'cta': 'cta',
+    'pricing': 'pricing',
+    'faqs': 'faqs',
+    'reviews': 'reviews',
+    'blog': 'blogs',
+    'contact': 'contactus',
+    'map': 'map',
+}

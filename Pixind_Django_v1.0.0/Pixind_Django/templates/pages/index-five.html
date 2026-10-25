@@ -5,7 +5,7 @@
 {% include 'Base/navbar.html' %}
 
 {% for blk in home_blocks %}
-{% include blk.tpl %}
+{% include blk.tpl with sections=blk.sections %}
 {% endfor %}
 
 {% endblock %}
